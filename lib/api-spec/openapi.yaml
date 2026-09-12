@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: visual-perception
+    description: Privacy-first visual perception operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /process-visual-context:
+    post:
+      operationId: processVisualContext
+      tags: [visual-perception]
+      summary: Convert a redacted screenshot and task into browser commands
+      description: Analyzes pre-redacted visual context and returns validated commands without executing them.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VisualContextInput"
+      responses:
+        "200":
+          description: Visual context processed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VisualContextResult"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "413":
+          description: Request is too large
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Vision model failed or returned invalid output
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +72,87 @@ components:
           type: string
       required:
         - status
+    VisualContextInput:
+      type: object
+      properties:
+        image_base64:
+          type: string
+          minLength: 32
+          description: Base64-encoded pre-redacted PNG, JPEG, WEBP, or GIF image. A data URL prefix is also accepted.
+        task_prompt:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: Natural-language task for the vision model.
+      required:
+        - image_base64
+        - task_prompt
+    VisualCommand:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [click, type, scroll, keypress, select, wait, navigate]
+        target:
+          type: ["string", "null"]
+        x:
+          type: ["number", "null"]
+        y:
+          type: ["number", "null"]
+        text:
+          type: ["string", "null"]
+        direction:
+          type: ["string", "null"]
+          enum: [up, down, left, right, null]
+        amount:
+          type: ["number", "null"]
+        key:
+          type: ["string", "null"]
+        value:
+          type: ["string", "null"]
+        milliseconds:
+          type: ["number", "null"]
+        url:
+          type: ["string", "null"]
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+      required:
+        - action
+        - confidence
+    VisualContextResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        commands:
+          type: array
+          items:
+            $ref: "#/components/schemas/VisualCommand"
+        model:
+          type: string
+        error:
+          type: ["string", "null"]
+      required:
+        - success
+        - commands
+        - model
+        - error
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        error:
+          type: string
+        commands:
+          type: array
+          items:
+            $ref: "#/components/schemas/VisualCommand"
+        model:
+          type: ["string", "null"]
+      required:
+        - success
+        - error
 
