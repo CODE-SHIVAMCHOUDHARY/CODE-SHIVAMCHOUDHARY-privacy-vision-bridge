@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ErrorResponseSource } from './errorResponseSource';
 import type { VisualCommand } from './visualCommand';
 
 export interface ErrorResponse {
@@ -13,4 +14,6 @@ export interface ErrorResponse {
   commands?: VisualCommand[];
   /** @nullable */
   model?: string | null;
+  /** @nullable */
+  source?: ErrorResponseSource;
 }

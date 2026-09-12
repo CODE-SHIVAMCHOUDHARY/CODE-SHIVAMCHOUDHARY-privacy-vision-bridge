@@ -35,6 +35,7 @@ import { Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
 const queryClient = new QueryClient();
 
 type ViewState = 'empty' | 'loading' | 'success' | 'failure';
+type ProcessingMode = 'demo' | 'live';
 type VisualCommand = {
   action: string;
   target?: string | null;
@@ -53,6 +54,7 @@ type VisualContextResult = {
   success: boolean;
   commands: VisualCommand[];
   model: string;
+  source: ProcessingMode;
   error: string | null;
 };
 
@@ -96,6 +98,7 @@ function Workbench() {
   const [imageBase64, setImageBase64] = useState('');
   const [imageName, setImageName] = useState('');
   const [taskPrompt, setTaskPrompt] = useState('');
+  const [mode, setMode] = useState<ProcessingMode>('demo');
   const [isDragging, setIsDragging] = useState(false);
   const [result, setResult] = useState<VisualContextResult | null>(null);
   const [runError, setRunError] = useState('');
@@ -114,7 +117,8 @@ function Workbench() {
   const payload = useMemo(() => ({
     image_base64: imageBase64,
     task_prompt: taskPrompt,
-  }), [imageBase64, taskPrompt]);
+    mode,
+  }), [imageBase64, taskPrompt, mode]);
 
   useEffect(() => {
     const handlePaste = (event: ClipboardEvent) => {
@@ -266,10 +270,25 @@ function Workbench() {
                   <p className="field-help">Be specific about the outcome. The processor returns intent only — it will not operate the browser.</p>
                 </div>
 
+                <div className="field-block mode-block">
+                  <div className="field-label"><span>Processing mode</span><span className={`mode-status ${mode}`}>{mode === 'demo' ? 'no provider access' : 'provider required'}</span></div>
+                  <div className="mode-toggle" role="group" aria-label="Processing mode">
+                    <button type="button" className={`mode-option ${mode === 'demo' ? 'selected' : ''}`} onClick={() => { setMode('demo'); setResult(null); setRunError(''); }} data-testid="button-mode-demo">
+                      <span className="mode-option-title">Local demo</span>
+                      <span>deterministic commands</span>
+                    </button>
+                    <button type="button" className={`mode-option ${mode === 'live' ? 'selected' : ''}`} onClick={() => { setMode('live'); setResult(null); setRunError(''); }} data-testid="button-mode-live">
+                      <span className="mode-option-title">Live VLM</span>
+                      <span>configured provider</span>
+                    </button>
+                  </div>
+                  <p className="field-help">{mode === 'demo' ? 'Runs locally without external AI credentials. The response is labeled demo output.' : 'Sends the pre-redacted image to the configured vision provider. The response is labeled live VLM output.'}</p>
+                </div>
+
                 <div className="button-row">
                   <button className="button button-quiet" onClick={resetWorkbench} disabled={!imageBase64 && !taskPrompt && !result} data-testid="button-reset-workbench"><RotateCcw size={14} /> Reset</button>
                   <button className="button button-primary" onClick={runPerception} disabled={!imageBase64 || !taskPrompt.trim() || processVisualContext.isPending} data-testid="button-run-perception">
-                    {processVisualContext.isPending ? <><Activity size={15} /> Processing context…</> : <><UploadCloud size={15} /> Run perception</>}
+                    {processVisualContext.isPending ? <><Activity size={15} /> Processing context…</> : <><UploadCloud size={15} /> {mode === 'demo' ? 'Run local demo' : 'Run live VLM'}</>}
                   </button>
                 </div>
               </div>
@@ -294,6 +313,7 @@ function Workbench() {
                 {viewState === 'failure' && (
                   <div data-testid="state-failure">
                     <div className="result-summary">
+                      <div className={`source-badge ${result?.source || mode}`} data-testid="text-result-source">{result?.source === 'demo' || (!result && mode === 'demo') ? 'LOCAL DEMO OUTPUT' : 'LIVE VLM OUTPUT'}</div>
                       <div className="result-status failure"><XCircle size={18} /> Perception needs another pass</div>
                       <div className="summary-meta"><span>MODEL <strong>{result?.model || 'service response'}</strong></span><span>STATUS <strong>not executable</strong></span></div>
                       <p className="failure-copy">{runError || result?.error || 'No safe command sequence was returned.'}</p>
@@ -304,8 +324,9 @@ function Workbench() {
                 {viewState === 'success' && result && (
                   <div data-testid="state-success">
                     <div className="result-summary">
+                      <div className={`source-badge ${result.source}`} data-testid="text-result-source">{result.source === 'demo' ? 'LOCAL DEMO OUTPUT' : 'LIVE VLM OUTPUT'}</div>
                       <div className="result-status success"><CheckCircle2 size={18} /> Safe command path found</div>
-                      <div className="summary-meta"><span>MODEL <strong>{result.model}</strong></span><span>STEPS <strong>{result.commands.length}</strong></span><span>STATUS <strong>inspectable</strong></span></div>
+                      <div className="summary-meta"><span>MODEL <strong>{result.model}</strong></span><span>SOURCE <strong>{result.source}</strong></span><span>STEPS <strong>{result.commands.length}</strong></span><span>STATUS <strong>inspectable</strong></span></div>
                     </div>
                     <div className="command-list">
                       <div className="list-heading"><span>Validated sequence</span><span>Confidence</span></div>

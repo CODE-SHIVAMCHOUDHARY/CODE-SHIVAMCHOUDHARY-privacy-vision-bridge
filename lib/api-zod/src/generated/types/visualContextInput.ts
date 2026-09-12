@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { VisualContextInputMode } from './visualContextInputMode';
 
 export interface VisualContextInput {
   /**
@@ -18,4 +19,6 @@ export interface VisualContextInput {
      * @maxLength 2000
      */
   task_prompt: string;
+  /** Processing mode. Demo is deterministic and local; live calls the configured vision model. */
+  mode?: VisualContextInputMode;
 }

@@ -9,6 +9,17 @@ export interface HealthStatus {
   status: string;
 }
 
+/**
+ * Processing mode. Demo is deterministic and local; live calls the configured vision model.
+ */
+export type VisualContextInputMode = typeof VisualContextInputMode[keyof typeof VisualContextInputMode];
+
+
+export const VisualContextInputMode = {
+  demo: 'demo',
+  live: 'live',
+} as const;
+
 export interface VisualContextInput {
   /**
      * Base64-encoded pre-redacted PNG, JPEG, WEBP, or GIF image. A data URL prefix is also accepted.
@@ -21,6 +32,8 @@ export interface VisualContextInput {
      * @maxLength 2000
      */
   task_prompt: string;
+  /** Processing mode. Demo is deterministic and local; live calls the configured vision model. */
+  mode?: VisualContextInputMode;
 }
 
 export type VisualCommandAction = typeof VisualCommandAction[keyof typeof VisualCommandAction];
@@ -78,13 +91,37 @@ export interface VisualCommand {
   confidence: number;
 }
 
+/**
+ * Whether the commands came from the deterministic local demo or the live vision model.
+ */
+export type VisualContextResultSource = typeof VisualContextResultSource[keyof typeof VisualContextResultSource];
+
+
+export const VisualContextResultSource = {
+  demo: 'demo',
+  live: 'live',
+} as const;
+
 export interface VisualContextResult {
   success: boolean;
   commands: VisualCommand[];
   model: string;
+  /** Whether the commands came from the deterministic local demo or the live vision model. */
+  source: VisualContextResultSource;
   /** @nullable */
   error: string | null;
 }
+
+/**
+ * @nullable
+ */
+export type ErrorResponseSource = typeof ErrorResponseSource[keyof typeof ErrorResponseSource] | null;
+
+
+export const ErrorResponseSource = {
+  demo: 'demo',
+  live: 'live',
+} as const;
 
 export interface ErrorResponse {
   success: boolean;
@@ -92,5 +129,7 @@ export interface ErrorResponse {
   commands?: VisualCommand[];
   /** @nullable */
   model?: string | null;
+  /** @nullable */
+  source?: ErrorResponseSource;
 }
 

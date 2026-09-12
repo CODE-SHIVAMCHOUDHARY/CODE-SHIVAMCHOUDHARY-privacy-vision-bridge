@@ -84,6 +84,11 @@ components:
           minLength: 1
           maxLength: 2000
           description: Natural-language task for the vision model.
+        mode:
+          type: string
+          enum: [demo, live]
+          default: live
+          description: Processing mode. Demo is deterministic and local; live calls the configured vision model.
       required:
         - image_base64
         - task_prompt
@@ -132,12 +137,17 @@ components:
             $ref: "#/components/schemas/VisualCommand"
         model:
           type: string
+        source:
+          type: string
+          enum: [demo, live]
+          description: Whether the commands came from the deterministic local demo or the live vision model.
         error:
           type: ["string", "null"]
       required:
         - success
         - commands
         - model
+        - source
         - error
     ErrorResponse:
       type: object
@@ -152,6 +162,9 @@ components:
             $ref: "#/components/schemas/VisualCommand"
         model:
           type: ["string", "null"]
+        source:
+          type: ["string", "null"]
+          enum: [demo, live, null]
       required:
         - success
         - error

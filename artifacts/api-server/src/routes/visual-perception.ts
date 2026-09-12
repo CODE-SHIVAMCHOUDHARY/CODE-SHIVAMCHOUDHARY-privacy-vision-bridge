@@ -4,7 +4,10 @@ import { ProcessVisualContextBody, ProcessVisualContextResponse } from "@workspa
 const router: IRouter = Router();
 
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
-const MODEL = process.env.VLM_MODEL || "gpt-4o-mini";
+const LIVE_MODEL = process.env.VLM_MODEL || "gpt-4o-mini";
+const DEMO_MODEL = "local-demo";
+
+type ProcessingMode = "demo" | "live";
 
 type ImagePayload = {
   dataUrl: string;
@@ -47,7 +50,8 @@ function parseModelCommands(content: string) {
   const result = ProcessVisualContextResponse.safeParse({
     success: true,
     commands: parsed,
-    model: MODEL,
+    model: LIVE_MODEL,
+    source: "live",
     error: null,
   });
 
@@ -61,7 +65,8 @@ function parseModelCommands(content: string) {
   const retry = ProcessVisualContextResponse.safeParse({
     success: true,
     commands,
-    model: MODEL,
+    model: LIVE_MODEL,
+    source: "live",
     error: null,
   });
 
@@ -70,6 +75,50 @@ function parseModelCommands(content: string) {
   }
 
   return retry.data.commands;
+}
+
+function buildDemoCommands(taskPrompt: string) {
+  const task = taskPrompt.toLowerCase();
+
+  if (task.includes("scroll")) {
+    return [
+      {
+        action: "scroll" as const,
+        direction: "down" as const,
+        amount: 480,
+        confidence: 0.94,
+      },
+    ];
+  }
+
+  if (task.includes("type") || task.includes("search")) {
+    return [
+      {
+        action: "click" as const,
+        target: "visible text field",
+        confidence: 0.9,
+      },
+      {
+        action: "type" as const,
+        target: "visible text field",
+        text: "demo input",
+        confidence: 0.86,
+      },
+    ];
+  }
+
+  return [
+    {
+      action: "click" as const,
+      target: "primary visible action",
+      confidence: 0.88,
+    },
+    {
+      action: "wait" as const,
+      milliseconds: 500,
+      confidence: 0.98,
+    },
+  ];
 }
 
 async function analyzeWithVisionModel(image: ImagePayload, taskPrompt: string) {
@@ -85,7 +134,7 @@ async function analyzeWithVisionModel(image: ImagePayload, taskPrompt: string) {
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: MODEL,
+      model: LIVE_MODEL,
       response_format: { type: "json_object" },
       max_tokens: 1200,
       messages: [
@@ -135,11 +184,15 @@ router.post("/process-visual-context", async (req, res) => {
 
   try {
     const image = decodeImage(parsedBody.data.image_base64);
-    const commands = await analyzeWithVisionModel(image, parsedBody.data.task_prompt);
+    const mode: ProcessingMode = parsedBody.data.mode ?? "live";
+    const commands = mode === "demo"
+      ? buildDemoCommands(parsedBody.data.task_prompt)
+      : await analyzeWithVisionModel(image, parsedBody.data.task_prompt);
     const result = ProcessVisualContextResponse.parse({
       success: true,
       commands,
-      model: MODEL,
+      model: mode === "demo" ? DEMO_MODEL : LIVE_MODEL,
+      source: mode,
       error: null,
     });
     res.json(result);
@@ -149,7 +202,14 @@ router.post("/process-visual-context", async (req, res) => {
       ? 400
       : 502;
     req.log.warn({ status, reason: message }, "Visual perception request failed");
-    res.status(status).json({ success: false, error: message, commands: [], model: MODEL });
+    const mode = parsedBody.data.mode ?? "live";
+    res.status(status).json({
+      success: false,
+      error: message,
+      commands: [],
+      model: mode === "demo" ? DEMO_MODEL : LIVE_MODEL,
+      source: mode,
+    });
   }
 });
 

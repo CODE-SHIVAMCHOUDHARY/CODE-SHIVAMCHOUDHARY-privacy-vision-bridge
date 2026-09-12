@@ -235,6 +235,15 @@ body { margin: 0; min-width: 320px; }
 .task-input:focus { border-color: hsl(68 72% 43%); box-shadow: 0 0 0 3px hsl(68 72% 49% / .15); }
 .task-input::placeholder { color: hsl(var(--muted-foreground) / .75); }
 .field-help { color: hsl(var(--muted-foreground)); font-size: 10px; line-height: 1.4; margin: 7px 0 0; }
+.mode-block { border-top: 1px solid hsl(var(--border)); padding-top: 17px; }
+.mode-status { font: 10px var(--app-font-mono); text-transform: uppercase; letter-spacing: .05em; }
+.mode-status.demo { color: hsl(178 35% 36%); }
+.mode-status.live { color: hsl(24 57% 42%); }
+.mode-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mode-option { display: grid; gap: 4px; padding: 11px 12px; text-align: left; border: 1px solid hsl(var(--border)); border-radius: 8px; background: transparent; color: hsl(var(--muted-foreground)); cursor: pointer; font: 10px var(--app-font-mono); }
+.mode-option:hover { border-color: hsl(68 72% 43%); }
+.mode-option.selected { border-color: hsl(68 61% 38%); background: hsl(68 45% 94%); color: hsl(var(--foreground)); box-shadow: inset 3px 0 0 hsl(68 61% 38%); }
+.mode-option-title { color: hsl(var(--foreground)); font: 12px var(--app-font-sans); font-weight: 600; }
 .button-row { display: flex; gap: 9px; margin-top: 20px; }
 .button { border: 1px solid transparent; border-radius: 8px; cursor: pointer; display: inline-flex; justify-content: center; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; font-size: 12px; font-weight: 600; transition: transform .16s, background-color .16s, border-color .16s; }
 .button:active { transform: translateY(1px); }
@@ -263,6 +272,9 @@ body { margin: 0; min-width: 320px; }
 .loading-label { margin-top: 22px; color: hsl(var(--muted-foreground)); font: 10px var(--app-font-mono); letter-spacing: .08em; text-transform: uppercase; }
 @keyframes shimmer { 100% { transform: translateX(100%); } }
 .result-summary { padding: 20px 22px 17px; border-bottom: 1px solid hsl(var(--border)); }
+.source-badge { display: inline-flex; margin-bottom: 13px; padding: 5px 7px; border-radius: 5px; font: 10px var(--app-font-mono); letter-spacing: .08em; }
+.source-badge.demo { color: hsl(178 35% 31%); background: hsl(191 44% 89%); }
+.source-badge.live { color: hsl(24 57% 35%); background: hsl(28 76% 89%); }
 .result-status { display: flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 600; }
 .result-status.success svg { color: hsl(152 48% 38%); }
 .result-status.failure svg { color: hsl(var(--destructive)); }

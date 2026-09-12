@@ -25,11 +25,12 @@ export const processVisualContextBodyImageBase64Min = 32;
 
 export const processVisualContextBodyTaskPromptMax = 2000;
 
-
+export const processVisualContextBodyModeDefault = `live`;
 
 export const ProcessVisualContextBody = zod.object({
   "image_base64": zod.string().min(processVisualContextBodyImageBase64Min).describe('Base64-encoded pre-redacted PNG, JPEG, WEBP, or GIF image. A data URL prefix is also accepted.'),
-  "task_prompt": zod.string().min(1).max(processVisualContextBodyTaskPromptMax).describe('Natural-language task for the vision model.')
+  "task_prompt": zod.string().min(1).max(processVisualContextBodyTaskPromptMax).describe('Natural-language task for the vision model.'),
+  "mode": zod.enum(['demo', 'live']).default(processVisualContextBodyModeDefault).describe('Processing mode. Demo is deterministic and local; live calls the configured vision model.')
 })
 
 export const processVisualContextResponseCommandsItemConfidenceMin = 0;
@@ -54,6 +55,7 @@ export const ProcessVisualContextResponse = zod.object({
   "confidence": zod.number().min(processVisualContextResponseCommandsItemConfidenceMin).max(processVisualContextResponseCommandsItemConfidenceMax)
 })),
   "model": zod.string(),
+  "source": zod.enum(['demo', 'live']).describe('Whether the commands came from the deterministic local demo or the live vision model.'),
   "error": zod.string().nullable()
 })
 

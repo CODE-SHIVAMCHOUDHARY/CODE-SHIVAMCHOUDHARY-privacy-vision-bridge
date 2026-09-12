@@ -7,9 +7,12 @@
  */
 
 export * from './errorResponse';
+export * from './errorResponseSource';
 export * from './healthStatus';
 export * from './visualCommand';
 export * from './visualCommandAction';
 export * from './visualCommandDirection';
 export * from './visualContextInput';
+export * from './visualContextInputMode';
 export * from './visualContextResult';
+export * from './visualContextResultSource';

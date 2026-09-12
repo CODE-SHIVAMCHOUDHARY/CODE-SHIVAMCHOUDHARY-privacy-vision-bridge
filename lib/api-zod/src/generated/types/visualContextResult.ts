@@ -6,11 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { VisualCommand } from './visualCommand';
+import type { VisualContextResultSource } from './visualContextResultSource';
 
 export interface VisualContextResult {
   success: boolean;
   commands: VisualCommand[];
   model: string;
+  /** Whether the commands came from the deterministic local demo or the live vision model. */
+  source: VisualContextResultSource;
   /** @nullable */
   error: string | null;
 }
