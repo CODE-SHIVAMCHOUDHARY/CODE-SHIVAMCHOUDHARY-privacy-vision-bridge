@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Privacy-First Visual Agent"
+description = "A judge-ready visual perception workbench that accepts pre-redacted screenshots and task prompts, analyzes the page with a vision model, and returns validated browser commands without executing them."
+version = "1.0.0"
+id = "artifacts/visual-agent"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24958
+
+[services.development]
+run = "pnpm --filter @workspace/visual-agent run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/visual-agent", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/visual-agent/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24958"
+BASE_PATH = "/"

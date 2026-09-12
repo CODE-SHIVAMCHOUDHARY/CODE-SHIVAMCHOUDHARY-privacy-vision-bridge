@@ -1,0 +1,554 @@
+# Product Requirements Document (PRD)
+
+## Privacy-First On-Device Visual Perception for Lightweight Browser Agents
+
+### 1. Product Overview
+
+**Product Name:** Privacy-First Visual Browser Agent
+**Project Type:** SIH Software Prototype
+**Primary Component:** FastAPI + Vision-Language Model (VLM)
+
+The system provides a lightweight backend that receives **pre-redacted/anonymized screenshots or visual context**, analyzes them using a **Vision-Language Model (VLM)**, and converts the VLM's understanding into a **standardized command JSON payload** that can later be consumed by a browser agent.
+
+The backend is intentionally developed and tested **independently of the browser extension** using locally stored, pre-redacted test images.
+
+---
+
+## 2. Problem Statement
+
+Lightweight browser agents need to understand webpages visually in order to perform actions such as:
+
+* Finding buttons
+* Locating input fields
+* Reading visible UI elements
+* Selecting controls
+* Entering text
+* Scrolling through a page
+
+However, sending raw screenshots containing personal or sensitive information to an external AI service can create privacy risks.
+
+The proposed system addresses this by:
+
+> **Receiving only pre-redacted visual information, processing it through a VLM, and returning structured browser commands instead of exposing raw personal information to the browser agent.**
+
+---
+
+## 3. Product Goal
+
+Build a standalone FastAPI server that can:
+
+1. Accept an anonymized visual context.
+2. Accept a natural-language task instruction.
+3. Send the visual context and task to a VLM.
+4. Interpret the VLM response.
+5. Convert the interpretation into standardized command JSON.
+6. Return the commands through an API.
+7. Operate independently from the browser extension during development and testing.
+
+---
+
+# 4. Scope
+
+### In Scope
+
+* FastAPI backend
+* Local test-image workflow
+* Pre-redacted screenshots
+* Base64 image input
+* Task/prompt input
+* VLM integration
+* Structured command generation
+* JSON response validation
+* Confidence scores
+* Error handling
+* API testing through Node.js/Postman/cURL
+* `/health` endpoint
+* `/process-visual-context` endpoint
+
+### Out of Scope
+
+* Browser-extension development
+* Actual browser automation
+* Automatic clicking on the user's browser
+* User authentication
+* Production deployment
+* Permanent storage of screenshots
+* Processing unredacted/private screenshots
+
+---
+
+# 5. Target Users
+
+### Primary User
+
+**Browser-agent developers**
+
+They use the API to convert visual webpage information into machine-readable browser commands.
+
+### Secondary Users
+
+* AI/ML developers
+* SIH development team
+* QA/test engineers
+* Researchers working on lightweight browser agents
+
+---
+
+# 6. High-Level Architecture
+
+```text
+                 LOCAL DEVELOPMENT
+                        │
+                        ▼
+             Pre-Redacted Test Image
+                        │
+                        ▼
+                Node.js Test Client
+                        │
+                        │ JSON
+                        ▼
+             ┌─────────────────────┐
+             │      FastAPI        │
+             │       Server        │
+             └──────────┬──────────┘
+                        │
+                        ▼
+              Input Validation
+                        │
+                        ▼
+              Vision-Language Model
+               GPT / Claude / VLM
+                        │
+                        ▼
+             Command Interpretation
+                        │
+                        ▼
+             JSON Schema Validation
+                        │
+                        ▼
+              Standard Command JSON
+                        │
+                        ▼
+             Browser Agent (Future)
+```
+
+---
+
+# 7. Core API
+
+## Endpoint
+
+```http
+POST /process-visual-context
+```
+
+### Request
+
+```json
+{
+  "image_base64": "<BASE64_ENCODED_IMAGE>",
+  "task_prompt": "Locate the search input field, type 'latest market trends', and click the submit button."
+}
+```
+
+### Input Parameters
+
+| Parameter      | Type   | Required | Description                       |
+| -------------- | ------ | -------- | --------------------------------- |
+| `image_base64` | String | Yes      | Base64-encoded pre-redacted image |
+| `task_prompt`  | String | Yes      | Natural-language task for the VLM |
+
+---
+
+# 8. VLM Processing
+
+The server sends two primary inputs to the VLM:
+
+### Visual Context
+
+The pre-redacted screenshot.
+
+### Task Prompt
+
+Example:
+
+```text
+Locate the search input field, type
+"latest market trends", and click the submit button.
+```
+
+The VLM should determine:
+
+* Relevant UI elements
+* Their approximate coordinates
+* Required interaction
+* Action sequence
+* Confidence level
+
+The exact VLM can remain configurable so that the prototype is not tightly coupled to one provider.
+
+---
+
+# 9. Standard Command JSON
+
+The system should return a predictable structure.
+
+### Example
+
+```json
+{
+  "success": true,
+  "commands": [
+    {
+      "action": "click",
+      "target": "Search input",
+      "x": 720,
+      "y": 112,
+      "confidence": 0.96
+    },
+    {
+      "action": "type",
+      "target": "Search input",
+      "text": "latest market trends",
+      "confidence": 0.94
+    },
+    {
+      "action": "click",
+      "target": "Submit button",
+      "x": 840,
+      "y": 160,
+      "confidence": 0.92
+    }
+  ],
+  "model": "VLM"
+}
+```
+
+---
+
+# 10. Supported Commands
+
+The initial version should support a limited and predictable command vocabulary.
+
+| Command    | Purpose                     |
+| ---------- | --------------------------- |
+| `click`    | Click a UI element          |
+| `type`     | Enter text                  |
+| `scroll`   | Scroll the page             |
+| `keypress` | Press a keyboard key        |
+| `select`   | Select an option            |
+| `wait`     | Wait for UI state           |
+| `navigate` | Navigate to a permitted URL |
+
+Example:
+
+```json
+{
+  "action": "scroll",
+  "direction": "down",
+  "amount": 600,
+  "confidence": 0.91
+}
+```
+
+---
+
+# 11. Functional Requirements
+
+### FR-01: Image Input
+
+The server shall accept a Base64-encoded image.
+
+### FR-02: Privacy Requirement
+
+The system shall be designed to receive **pre-redacted/anonymized visual context** during the independent development workflow.
+
+### FR-03: Prompt Input
+
+The API shall accept a natural-language task instruction.
+
+### FR-04: VLM Processing
+
+The server shall forward the visual context and task instruction to the configured VLM.
+
+### FR-05: Command Generation
+
+The server shall convert the VLM's result into standardized commands.
+
+### FR-06: JSON Output
+
+The API shall return machine-readable JSON.
+
+### FR-07: Validation
+
+The server shall validate generated commands against an allowed command schema.
+
+### FR-08: Confidence
+
+Where available, each command should contain a confidence score.
+
+### FR-09: Error Handling
+
+Invalid images, malformed Base64, missing fields, VLM failures, and invalid model output shall produce controlled API errors.
+
+### FR-10: Independent Operation
+
+The backend must be runnable and testable without the browser extension.
+
+---
+
+# 12. Non-Functional Requirements
+
+### Privacy
+
+* Use pre-redacted test images.
+* Avoid unnecessary image persistence.
+* Do not log raw visual content.
+* Avoid exposing sensitive information in application logs.
+
+### Performance
+
+Target prototype response time:
+
+**≤ 5–10 seconds**, depending on the selected VLM and network conditions.
+
+### Reliability
+
+The API should return valid JSON even when the VLM fails or produces malformed output.
+
+### Maintainability
+
+VLM provider/model should be configurable rather than hard-coded throughout the application.
+
+### Security
+
+* Validate request size.
+* Validate Base64 input.
+* Validate image format.
+* Validate VLM output.
+* Restrict commands to an allowlist.
+* Never directly execute arbitrary model-generated commands on the server.
+
+---
+
+# 13. Independent Development Workflow
+
+The development workflow should be:
+
+```text
+1. Capture webpage screenshot
+             ↓
+2. Redact sensitive information
+             ↓
+3. Save locally
+             ↓
+4. Node.js test client
+             ↓
+5. Base64 encode image
+             ↓
+6. POST /process-visual-context
+             ↓
+7. FastAPI validates request
+             ↓
+8. VLM analyzes image
+             ↓
+9. Commands generated
+             ↓
+10. JSON returned
+```
+
+This means the backend can be demonstrated even when the browser extension is not available.
+
+---
+
+# 14. Example Test Case
+
+### Input
+
+**Image:** `test_redacted_screenshot.jpg`
+
+**Prompt:**
+
+```text
+Locate the search input field, type
+"latest market trends", and click the submit button.
+```
+
+### Expected Result
+
+```json
+{
+  "success": true,
+  "commands": [
+    {
+      "action": "click",
+      "target": "Search input",
+      "x": 720,
+      "y": 112,
+      "confidence": 0.96
+    },
+    {
+      "action": "type",
+      "target": "Search input",
+      "text": "latest market trends",
+      "confidence": 0.94
+    },
+    {
+      "action": "click",
+      "target": "Submit button",
+      "x": 840,
+      "y": 160,
+      "confidence": 0.92
+    }
+  ]
+}
+```
+
+---
+
+# 15. Error Responses
+
+### Invalid Image
+
+```json
+{
+  "success": false,
+  "error": "Invalid Base64 image"
+}
+```
+
+### Missing Prompt
+
+```json
+{
+  "success": false,
+  "error": "task_prompt is required"
+}
+```
+
+### VLM Failure
+
+```json
+{
+  "success": false,
+  "error": "VLM processing failed"
+}
+```
+
+---
+
+# 16. API Testing
+
+The system should be testable independently using:
+
+* Node.js client
+* Postman
+* cURL
+* Python requests
+* Swagger/OpenAPI documentation
+
+FastAPI automatically provides interactive API documentation at:
+
+```text
+/docs
+```
+
+---
+
+# 17. Success Criteria
+
+The prototype will be considered successful when:
+
+* [ ] FastAPI server starts successfully.
+* [ ] `/health` returns a successful response.
+* [ ] `/process-visual-context` accepts Base64 images.
+* [ ] Pre-redacted local images can be tested.
+* [ ] Task prompts are accepted.
+* [ ] VLM receives image + task.
+* [ ] VLM output is converted to standardized commands.
+* [ ] Returned data follows the JSON schema.
+* [ ] Invalid requests are handled safely.
+* [ ] The system works without a browser extension.
+* [ ] The complete pipeline can be demonstrated to SIH judges.
+
+---
+
+# 18. MVP
+
+### Phase 1 — Backend
+
+```text
+FastAPI
+   ↓
+POST /process-visual-context
+   ↓
+Image + Prompt
+   ↓
+Demo command JSON
+```
+
+### Phase 2 — VLM
+
+```text
+FastAPI
+   ↓
+Image + Prompt
+   ↓
+VLM
+   ↓
+Structured commands
+```
+
+### Phase 3 — Browser Integration
+
+```text
+Browser Extension
+       ↓
+Screenshot
+       ↓
+Redaction
+       ↓
+FastAPI
+       ↓
+VLM
+       ↓
+Command JSON
+       ↓
+Browser Agent
+```
+
+---
+
+# 19. Key Innovation
+
+The main innovation is the separation between **visual understanding** and **browser execution**.
+
+Instead of allowing the AI model to directly control a browser:
+
+> **Visual Context → VLM → Standardized Commands → Browser Agent**
+
+This creates a modular architecture where the perception server can be independently developed, tested, replaced, and evaluated.
+
+---
+
+# 20. Final PRD Summary
+
+**Core Deliverable:**
+
+> A standalone **FastAPI visual-perception server** that accepts **pre-redacted/anonymized visual context and a task prompt**, sends the information to a **Vision-Language Model**, and returns a **validated standardized command JSON payload**.
+
+**Primary demonstration:**
+
+```text
+Pre-Redacted Image
+       ↓
+Node.js Client
+       ↓
+FastAPI Endpoint
+       ↓
+VLM
+       ↓
+Command JSON
+```
+
+This is a strong **MVP boundary for an SIH prototype** because the team can demonstrate the perception layer independently before integrating the browser extension.
